@@ -61,7 +61,7 @@ export default (entrypointUrl) =>
   fetchEntrypointAndDocs(entrypointUrl).then(({ entrypoint, docs }) => {
     let admin = {
       title: 'Admin',
-      resources: {}
+      resources: []
     };
 
     if ('undefined' !== typeof docs[0]['http://www.w3.org/ns/hydra/core#title']) {
@@ -75,8 +75,8 @@ export default (entrypointUrl) =>
       let property = properties['http://www.w3.org/ns/hydra/core#property'][0];
       let resource = {
         name: (guessNameFromUrl(entrypoint[0][property['@id']][0]['@id'], entrypointUrl)),
-        readableFields: {},
-        writableFields: {}
+        readableFields: [],
+        writableFields: []
       };
 
       var entrypointSupportedOperations = property['http://www.w3.org/ns/hydra/core#supportedOperation'];
@@ -87,6 +87,7 @@ export default (entrypointUrl) =>
         if (0 === className.indexOf('http://www.w3.org/ns/hydra/core')) {
           continue;
         }
+        resource.range = className;
 
         let supportedClass = findSupportedClass(docs, className);
         for (let supportedProperty of supportedClass['http://www.w3.org/ns/hydra/core#supportedProperty']) {
@@ -101,9 +102,6 @@ export default (entrypointUrl) =>
             range: range
           };
 
-          console.log(rdfProperty);
-          console.log(field);
-
           // Add placeholder
           if (supportedProperty['http://www.w3.org/ns/hydra/core#description']) {
             field.placeholder = supportedProperty['http://www.w3.org/ns/hydra/core#description'][0]['@value'];
@@ -111,16 +109,16 @@ export default (entrypointUrl) =>
 
           // list fields
           if (supportedProperty['http://www.w3.org/ns/hydra/core#readable'][0]['@value']) {
-            resource.readableFields[field.name] = field;
+            resource.readableFields.push(field);
           }
 
           // edition and creation fields
           if (supportedProperty['http://www.w3.org/ns/hydra/core#writable'][0]['@value']) {
-            resource.writableFields[field.name] = field;
+            resource.writableFields.push(field);
           }
         }
 
-        admin.resources[resource.name] = resource;
+        admin.resources.push(resource);
 
         break;
       }

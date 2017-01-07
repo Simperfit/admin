@@ -40,8 +40,8 @@ export default (apiUrl, httpClient = jsonLdClient) => {
         const { field, order } = params.sort;
         const query = {
           ...params.filter,
-          _sort: field,
-          _order: order,
+          sort: field,
+          order: order,
           page: page
         };
         url = `${apiUrl}/${resource}?${fetchUtils.queryParameters(query)}`;
@@ -52,13 +52,13 @@ export default (apiUrl, httpClient = jsonLdClient) => {
         break;
       }
       case GET_ONE:
-        url = `${apiUrl}/${resource}/${params.id}`;
+        url = apiUrl+params.id;
         break;
       case GET_MANY_REFERENCE:
         url = `${apiUrl}/${resource}?${fetchUtils.queryParameters({ [params.target]: params.id })}`;
         break;
       case UPDATE:
-        url = `${apiUrl}/${resource}/${params.id}`;
+        url = apiUrl+params.id;
         options.method = 'PUT';
         options.body = JSON.stringify(params.data);
         break;
@@ -68,7 +68,7 @@ export default (apiUrl, httpClient = jsonLdClient) => {
         options.body = JSON.stringify(params.data);
         break;
       case DELETE:
-        url = `${apiUrl}/${resource}/${params.id}`;
+        url = apiUrl+params.id;
         options.method = 'DELETE';
         break;
       default:
@@ -89,12 +89,24 @@ export default (apiUrl, httpClient = jsonLdClient) => {
     switch (type) {
       case GET_LIST:
         return {
-          data: json['hydra:member'].map(x => x),
+          data: json['hydra:member'].map(x => {
+            if ("undefined" !== typeof x.id) {
+              x.originId = x.id;
+            }
+            x.id = x['@id'];
+
+            return x
+          }),
           total: json['hydra:totalItems'],
         };
       case CREATE:
-        return { ...params.data, id: json.id };
+        return { ...params.data, id: json['@id'] };
       default:
+        if ("undefined" !== typeof json.id) {
+          json.originId = json.id;
+        }
+        json.id = json['@id'];
+
         return json;
     }
   };
@@ -108,7 +120,7 @@ export default (apiUrl, httpClient = jsonLdClient) => {
   return (type, resource, params) => {
     // json-server doesn't handle WHERE IN requests, so we fallback to calling GET_ONE n times instead
     if (type === GET_MANY) {
-      return Promise.all(params.ids.map(id => httpClient(`${apiUrl}/${resource}/${id}`)))
+      return Promise.all(params.ids.map(id => httpClient(apiUrl+id)))
         .then(responses => responses.map(response => response.json));
     }
     const { url, options } = convertRESTRequestToHTTP(type, resource, params);
