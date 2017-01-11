@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import './App.css';
-import Admin from './Admin';
+import Admin from './components/Admin';
 
 class App extends Component {
   render() {
